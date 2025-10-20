@@ -6,12 +6,13 @@ version: '3.8'
 services:
   # 🚀 Claude Relay Service
   claude-relay:
+    container_name: claude-relay-service-claude-relay
     build: .
     image: weishaw/claude-relay-service:latest
     restart: unless-stopped
     ports:
       # 绑定地址：生产环境建议使用反向代理，设置 BIND_HOST=127.0.0.1
-      - "${BIND_HOST:-0.0.0.0}:${PORT:-3000}:3000"
+      - "${BIND_HOST:-0.0.0.0}:${PORT:-9002}:3000"
     volumes:
       - ./logs:/app/logs
       - ./data:/app/data
@@ -26,7 +27,7 @@ services:
       - ENCRYPTION_KEY=${ENCRYPTION_KEY}  # 必填：32字符的加密密钥
       - ADMIN_SESSION_TIMEOUT=${ADMIN_SESSION_TIMEOUT:-86400000}
       - API_KEY_PREFIX=${API_KEY_PREFIX:-cr_}
-      
+
       # 👤 管理员凭据（可选）
       - ADMIN_USERNAME=${ADMIN_USERNAME:-}
       - ADMIN_PASSWORD=${ADMIN_PASSWORD:-}
@@ -82,6 +83,7 @@ services:
 
   # 📊 Redis Database
   redis:
+    container_name: claude-relay-service-redis
     image: redis:7-alpine
     restart: unless-stopped
     # 仅在容器网络内部暴露端口，不映射到主机
