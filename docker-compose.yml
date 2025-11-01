@@ -4,15 +4,38 @@ version: '3.8'
 # 所有配置通过环境变量设置，无需映射 .env 文件
 
 services:
+  # 🌐 Nginx Reverse Proxy
+  nginx:
+    container_name: claude-relay-service-nginx
+    image: nginx:1.25-alpine
+    restart: unless-stopped
+    ports:
+      # 对外暴露 9002 端口
+      - "0.0.0.0:9002:9002"
+    volumes:
+      # 挂载 nginx 配置文件
+      - ./config/nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      # 挂载日志目录
+      - ./logs/nginx:/var/log/nginx
+    depends_on:
+      - claude-relay
+    networks:
+      - claude-relay-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
   # 🚀 Claude Relay Service
   claude-relay:
     container_name: claude-relay-service-claude-relay
     build: .
     image: weishaw/claude-relay-service:latest
     restart: unless-stopped
-    ports:
-      # 绑定地址：生产环境建议使用反向代理，设置 BIND_HOST=127.0.0.1
-      - "${BIND_HOST:-0.0.0.0}:${PORT:-9002}:3000"
+    # 只在容器网络内部暴露，不映射到主机
+    expose:
+      - "3000"
     volumes:
       - ./logs:/app/logs
       - ./data:/app/data
